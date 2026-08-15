@@ -175,7 +175,6 @@ def results(user_name):
 # ===================== API CHO ADMIN QUẢN LÝ WEB LEARNING JAPAN =====================
 EXAM_RESULTS = os.path.join(HERE, "exam_results")
 os.makedirs(EXAM_RESULTS, exist_ok=True)
-EXAMS_FILE = os.path.join(HERE, "exams.json")
 
 @app.after_request
 def cors_exam(resp):
@@ -184,21 +183,6 @@ def cors_exam(resp):
         resp.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
         resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return resp
-
-@app.route("/api/exams", methods=["GET"])
-def api_exams():
-    p = EXAMS_FILE
-    if os.path.exists(p):
-        return jsonify(json.load(open(p, encoding="utf-8")))
-    return jsonify([])
-
-@app.route("/api/exams", methods=["PUT", "OPTIONS"])
-def api_save_exams():
-    if request.method == "OPTIONS": return ("", 204)
-    data = request.get_json(silent=True)
-    if not isinstance(data, list): return jsonify({"ok": False, "error": "expected array"}), 400
-    json.dump(data, open(EXAMS_FILE, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    return jsonify({"ok": True, "count": len(data)})
 
 @app.route("/api/submit", methods=["POST", "OPTIONS"])
 def api_submit():
