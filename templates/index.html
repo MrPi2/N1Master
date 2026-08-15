@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng nhập · N1Master</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style> body{font-family:'Inter',sans-serif} .grad{background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)} </style>
+</head>
+<body class="grad min-h-screen text-slate-100 flex items-center justify-center px-4">
+
+<main class="w-full max-w-md">
+  <div class="text-center mb-8">
+    <div class="inline-flex items-center gap-2 mb-4">
+      <i data-lucide="book-open" class="w-8 h-8 text-amber-400"></i>
+      <span class="font-extrabold text-2xl tracking-tight">N1<span class="text-amber-400">Master</span></span>
+    </div>
+    <h1 class="text-xl sm:text-2xl font-bold mb-2">Chào mừng đến với luyện thi N1</h1>
+    <p class="text-slate-400 text-sm">Đăng nhập để lưu kết quả và theo dõi tiến độ của bạn</p>
+  </div>
+
+  <div class="rounded-2xl bg-slate-800/50 border border-slate-700 p-6 shadow-xl">
+    <label class="block text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+      <i data-lucide="heart" class="w-4 h-4 text-rose-400"></i> Ny của bạn là ai?
+    </label>
+    <div class="relative mb-2">
+      <i data-lucide="user" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+      <input id="uname" type="text" placeholder="Nhập tên của bạn..." autocomplete="off"
+        class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/60 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-300">
+    </div>
+    <p id="err" class="text-rose-400 text-xs mb-3 hidden">Vui lòng nhập tên trước khi vào học nhé 💕</p>
+    <button id="enterBtn" class="w-full py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold flex items-center justify-center gap-2 transition-all duration-300">
+      <i data-lucide="arrow-right" class="w-4 h-4"></i> Vào học
+    </button>
+    <p class="text-[11px] text-slate-500 mt-3 text-center">Kết quả sẽ được lưu riêng cho tên này trên server.</p>
+  </div>
+
+  <p class="text-center text-slate-500 text-xs mt-6">Được tạo bởi <span class="text-amber-400 font-semibold">Đông Bảo</span> · Dữ liệu từ tài liệu N1 chính thống</p>
+</main>
+
+<script>
+const NAME_KEY = 'n1_user';
+const input = document.getElementById('uname');
+const err = document.getElementById('err');
+const btn = document.getElementById('enterBtn');
+
+// neu da co ten -> dien san
+input.value = localStorage.getItem(NAME_KEY) || '';
+
+function enter(){
+  const name = input.value.trim();
+  if(!name){ err.classList.remove('hidden'); input.focus(); return; }
+  localStorage.setItem(NAME_KEY, name);
+  window.location = '/home?name=' + encodeURIComponent(name);
+}
+
+btn.onclick = enter;
+input.addEventListener('keydown', e=>{ if(e.key==='Enter') enter(); });
+input.addEventListener('input', ()=> err.classList.add('hidden'));
+lucide.createIcons();
+</script>
+</body>
+</html>

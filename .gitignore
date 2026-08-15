@@ -1,0 +1,6 @@
+hf_space/
+results/
+__pycache__/
+*.pyc
+flask_log.txt
+.env

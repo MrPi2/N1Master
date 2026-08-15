@@ -1,0 +1,2 @@
+PARSER_TOO_FEW @ 2026-08-15 06:00
+Reported: OCR done but parser extracted too few questions (26 total; 4 of 7 files = 0). questions.json not created. Needs manual parser calibration.

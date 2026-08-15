@@ -1,0 +1,134 @@
+warning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
+[file] 20de goukaku N1: 161 trang
+  page 10/161, chars=658
+  page 20/161, chars=501
+  page 30/161, chars=402
+  page 40/161, chars=377
+  page 50/161, chars=655
+  page 60/161, chars=485
+  page 70/161, chars=367
+  page 80/161, chars=521
+  page 90/161, chars=644
+  page 100/161, chars=564
+  page 110/161, chars=507
+  page 120/161, chars=544
+  page 130/161, chars=441
+  page 140/161, chars=393
+  page 150/161, chars=64
+  page 160/161, chars=509
+  -> luu C:/Users/Admin/Documents/DongBao_Works/04_Japan_Learning_Web/raw_ocr\20de goukaku N1.txt (220 KB)
+[file] Bản rõ スピードマスターN1読解: 114 trang
+  page 10/114, chars=1324
+  page 20/114, chars=0
+  page 30/114, chars=0
+  page 40/114, chars=0
+  page 50/114, chars=0
+  page 60/114, chars=0
+  page 70/114, chars=0
+  page 80/114, chars=0
+  page 90/114, chars=0
+  page 100/114, chars=0
+  page 110/114, chars=0
+  -> luu C:/Users/Admin/Documents/DongBao_Works/04_Japan_Learning_Web/raw_ocr\Bản rõ スピードマスターN1読解.txt (26 KB)
+[file] Shin_Kan''zen_Master_N1-Bunpou: 199 trang
+  page 10/199, chars=0
+  page 20/199, chars=0
+  page 30/199, chars=0
+  page 40/199, chars=0
+  page 50/199, chars=0
+  page 60/199, chars=0
+  page 70/199, chars=0
+  page 80/199, chars=0
+  page 90/199, chars=0
+  page 100/199, chars=0
+  page 110/199, chars=0
+  page 120/199, chars=0
+  page 130/199, chars=0
+  page 140/199, chars=0
+  page 150/199, chars=0
+  page 160/199, chars=0
+  page 170/199, chars=0
+  page 180/199, chars=0
+  page 190/199, chars=0
+  -> luu C:/Users/Admin/Documents/DongBao_Works/04_Japan_Learning_Web/raw_ocr\Shin_Kan''zen_Master_N1-Bunpou.txt (4 KB)
+[file] Shin_Kan_zen_Master_N1-Goi 3: 219 trang
+  page 10/219, chars=0
+  page 20/219, chars=0
+  page 30/219, chars=0
+  page 40/219, chars=0
+  page 50/219, chars=0
+  page 60/219, chars=0
+  page 70/219, chars=0
+  page 80/219, chars=0
+  page 90/219, chars=0
+  page 100/219, chars=0
+  page 110/219, chars=0
+  page 120/219, chars=0
+  page 130/219, chars=0
+  page 140/219, chars=676
+  page 150/219, chars=816
+  page 160/219, chars=661
+  page 170/219, chars=797
+  page 180/219, chars=908
+  page 190/219, chars=819
+  page 200/219, chars=681
+  page 210/219, chars=893
+  -> luu C:/Users/Admin/Documents/DongBao_Works/04_Japan_Learning_Web/raw_ocr\Shin_Kan_zen_Master_N1-Goi 3.txt (165 KB)
+[file] Shin_Kanzen_Master_N1-Dokkai: 265 trang
+  page 10/265, chars=715
+  page 20/265, chars=1017
+  page 30/265, chars=580
+  page 40/265, chars=1001
+  page 50/265, chars=781
+  page 60/265, chars=546
+  page 70/265, chars=574
+  page 80/265, chars=578
+  page 90/265, chars=661
+  page 100/265, chars=0
+  page 110/265, chars=0
+  page 120/265, chars=0
+  page 130/265, chars=0
+  page 140/265, chars=0
+  page 150/265, chars=0
+  page 160/265, chars=0
+  page 170/265, chars=0
+  page 180/265, chars=0
+  page 190/265, chars=0
+  page 200/265, chars=0
+  page 210/265, chars=0
+  page 220/265, chars=0
+  page 230/265, chars=0
+  page 240/265, chars=0
+  page 250/265, chars=0
+  page 260/265, chars=0
+  -> luu C:/Users/Admin/Documents/DongBao_Works/04_Japan_Learning_Web/raw_ocr\Shin_Kanzen_Master_N1-Dokkai.txt (170 KB)
+[file] Tanki.Masuta.Doriru.N1_Book: 125 trang
+  page 10/125, chars=0
+  page 20/125, chars=0
+  page 30/125, chars=0
+  page 40/125, chars=0
+  page 50/125, chars=0
+  page 60/125, chars=0
+  page 70/125, chars=0
+  page 80/125, chars=0
+  page 90/125, chars=0
+  page 100/125, chars=0
+  page 110/125, chars=0
+  page 120/125, chars=0
+  -> luu C:/Users/Admin/Documents/DongBao_Works/04_Japan_Learning_Web/raw_ocr\Tanki.Masuta.Doriru.N1_Book.txt (3 KB)
+[file] [studyjapanese.net]_Nihongo_SouMatome_N1-Goi 2: 133 trang
+  page 10/133, chars=0
+  page 20/133, chars=0
+  page 30/133, chars=0
+  page 40/133, chars=0
+  page 50/133, chars=0
+  page 60/133, chars=0
+  page 70/133, chars=0
+  page 80/133, chars=0
+  page 90/133, chars=0
+  page 100/133, chars=0
+  page 110/133, chars=0
+  page 120/133, chars=0
+  page 130/133, chars=0
+  -> luu C:/Users/Admin/Documents/DongBao_Works/04_Japan_Learning_Web/raw_ocr\[studyjapanese.net]_Nihongo_SouMatome_N1-Goi 2.txt (3 KB)
+DONE OCR

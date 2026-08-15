@@ -1,0 +1,1 @@
+{"sig": {"n": 7, "bytes": 608744, "mtime": 1786730699.4}, "result": "WARN", "reported_at": "2026-08-15 04:45", "note": "OCR done; parser extracted only 26/<50 questions; format mismatch (circled numerals ①②③④⑤ vs ASCII 1)2)3)4)). Needs manual parser calibration."}

@@ -1,0 +1,7 @@
+{
+  "sig": {"n": 7, "bytes": 608744, "mtime": 1786730699.4},
+  "result": "WARN",
+  "msg": "warn_parser_too_few",
+  "notified_at": "2026-08-15T02:01:00",
+  "parsed_total": 26
+}

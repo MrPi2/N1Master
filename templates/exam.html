@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>Làm bài · N1Master</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body{font-family:'Inter',sans-serif}
+  .grad-header{background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)}
+  .grad-bg{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%)}
+  #optionsBox input[type="checkbox"],#optionsBox input[type="radio"]{display:none!important}
+  .opt-card .mk{width:20px;height:20px;border:2px solid #64748b;background:transparent;flex:none;transition:all .2s}
+  .opt-card .mk.round{border-radius:9999px!important}
+  .opt-card .mk.square{border-radius:0!important}
+  .opt-card .badge{width:32px;height:32px;background:#475569;color:#e2e8f0;flex:none}
+  /* TRANG THAI CHON: chi 1 card co class sel moi sang */
+  .opt-card.sel{border-color:#fbbf24;background:rgba(251,191,36,.12)}
+  .opt-card.sel .mk{background:#fbbf24;border-color:#fbbf24}
+  .opt-card.sel .mk::after{content:"✓";color:#0f172a;font-size:13px;font-weight:bold;display:flex;align-items:center;justify-content:center;height:100%}
+  .opt-card.sel .badge{background:#fbbf24!important;color:#0f172a!important}
+
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+  .opt-card{transition:all .25s ease}
+  .opt-card:hover{border-color:#fbbf24;transform:translateY(-1px)}
+  .opt-card.sel{border-color:#fbbf24;background:rgba(251,191,36,.12)}
+  @keyframes pulseRed{0%,100%{opacity:1}50%{opacity:.45}}
+  .timer-danger{color:#f43f5e!important;animation:pulseRed 1s infinite}
+</style>
+</head>
+<body class="grad-bg min-h-screen text-slate-100">
+<div id="app"></div>
+<div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+  <div class="w-full max-w-md rounded-2xl bg-slate-800 border border-slate-700 shadow-2xl p-6">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-11 h-11 rounded-xl bg-amber-400/15 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-6 h-6 text-amber-400"></i></div>
+      <h3 class="text-lg font-bold">Xác nhận nộp bài?</h3>
+    </div>
+    <p id="confirmText" class="text-slate-300 text-sm mb-6 leading-relaxed"></p>
+    <div class="flex gap-3">
+      <button onclick="closeConfirm()" class="flex-1 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 font-semibold transition-all duration-300">Hủy</button>
+      <button onclick="confirmSubmit()" class="flex-1 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold transition-all duration-300">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOPIC_ID='{{ topic.id }}';
+const TOPIC_NAME='{{ topic.name }}';
+const EXAM_IDX={{ exam_idx }};
+const EXAM_NAME='{{ exam.name }}';
+const UNAME=new URLSearchParams(location.search).get('name')||'anonymous';
+const BLOCKS={{ exam.questions|tojson }};
+const STORAGE_KEY='n1_ans_'+UNAME+'_'+TOPIC_ID+'_'+EXAM_IDX;
+const TIME_KEY='n1_time_'+UNAME+'_'+TOPIC_ID+'_'+EXAM_IDX;
+
+/* flatten blocks -> ITEMS */
+var ITEMS=[];
+BLOCKS.forEach(function(blk,bi){
+  if(blk.type==='reading'||blk.type==='listening'){
+    blk.questions.forEach(function(q,qi){
+      ITEMS.push({blk:blk,bi:bi,qi:qi,q:q,firstInBlock:(qi===0),multi:(q.multi||false),passage:blk.passage,audio:blk.audio,script:blk.script,title:blk.title});
+    });
+  } else {
+    ITEMS.push({blk:blk,bi:bi,qi:0,q:blk,firstInBlock:true,multi:(blk.multi||false)});
+  }
+});
+var TOTAL=ITEMS.length;
+if(TOTAL===0){ document.getElementById('app').innerHTML='<div class="p-10 text-center text-slate-400">Không có câu hỏi nào trong bài này.</div>'; throw new Error('empty'); }
+var TIME_LIMIT=TOTAL*30;
+var state={answers:{},flagged:{},current:0,timeLeft:TIME_LIMIT,finished:false};
+
+function saveAns(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify({answers:state.answers,flagged:state.flagged,current:state.current}));
+  }catch(e){}
+}
+function loadAns(){
+  try{
+    var s=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(s){
+      state.answers=s.answers||{};
+      state.flagged=s.flagged||{};
+      // BUG FIX: giu nguyen vi tri cau hien tai thay vi reset ve 0
+      if(typeof s.current==='number' && s.current>=0 && s.current<TOTAL){ state.current=s.current; }
+      var hasMulti=BLOCKS.some(function(b){
+        if(b.type){ return b.questions.some(function(q){return q.multi;}); }
+        return !!b.multi;
+      });
+      if(!hasMulti){
+        for(var k in state.answers){
+          if(Array.isArray(state.answers[k])){ delete state.answers[k]; }
+        }
+      }
+    }
+  }catch(e){}
+}
+function saveTime(){
+  try{ localStorage.setItem(TIME_KEY,String(state.timeLeft)); }catch(e){}
+}
+function loadTime(){
+  try{ var t=localStorage.getItem(TIME_KEY); if(t!==null){ state.timeLeft=parseInt(t); } }catch(e){}
+}
+
+var $=function(s){ return document.querySelector(s); };
+var app=$('#app');
+function letter(i){ return String.fromCharCode(65+i); }
+function isAns(i){
+  var a=state.answers[i];
+  if(ITEMS[i].multi){ return Array.isArray(a)&&a.length>0; }
+  return a!==undefined&&a>=0;
+}
+function answeredCount(){
+  var c=0;
+  for(var i=0;i<ITEMS.length;i++){ if(isAns(i)) c++; }
+  return c;
+}
+
+function renderQuiz(){
+  var it=ITEMS[state.current];
+  var pct=Math.round(answeredCount()/TOTAL*100);
+  var flagged=!!state.flagged[state.current];
+  var blockHtml='';
+  if(it.firstInBlock && it.passage){
+    blockHtml='<div class="mb-5 p-4 rounded-xl bg-slate-900/50 border border-slate-700 text-sm leading-relaxed text-slate-300 whitespace-pre-line">'+it.passage+'</div>';
+  }
+  if(it.firstInBlock && it.audio){
+    blockHtml='<div class="mb-5 p-4 rounded-xl bg-slate-900/50 border border-slate-700">'+
+      '<p class="text-xs text-amber-400 mb-2 flex items-center gap-1.5"><i data-lucide="headphones" class="w-4 h-4"></i> Nghe hiểu: '+it.title+'</p>'+
+      '<audio controls src="'+it.audio+'" class="w-full"></audio>'+
+      '<details class="mt-2 text-xs text-slate-400"><summary class="cursor-pointer">Xem script</summary><p class="mt-1 whitespace-pre-line">'+it.script+'</p></details>'+
+      '</div>';
+  }
+  var cur=it.q;
+  var flagBtn=flagged?'bg-amber-400/20 border-amber-400 text-amber-300':'bg-slate-700/50 border-slate-600 text-slate-300 hover:border-amber-400';
+  var multiBadge=cur.multi?'<span class="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 align-middle">★ Nhiều đáp án</span>':'';
+  var optsHtml='';
+  for(var i=0;i<cur.options.length;i++){
+    var sel;
+    if(cur.multi){ sel=Array.isArray(state.answers[state.current])&&state.answers[state.current].indexOf(i)>=0; }
+    else { sel=(state.answers[state.current]===i); }
+    var mkCls=cur.multi?'mk square':'mk round';
+    optsHtml+='<label class="opt-card '+(sel?'sel':'')+' flex items-center gap-3 p-4 rounded-xl bg-slate-900/40 border border-slate-700 cursor-pointer" onclick="handleSelect('+i+')">'+
+      '<span class="'+mkCls+'"></span>'+
+      '<span class="badge w-8 h-8 shrink-0 rounded-lg flex items-center justify-center font-bold text-sm transition-all duration-300">'+letter(i)+'</span>'+
+      '<span class="text-slate-100 text-sm sm:text-base">'+cur.options[i]+'</span>'+
+      '</label>';
+  }
+  var prevBtn='<button onclick="prev()" '+(state.current===0?'disabled class="flex-1 py-3 rounded-xl bg-slate-700/60 opacity-40 cursor-not-allowed font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-300"':'class="flex-1 py-3 rounded-xl bg-slate-700/60 hover:bg-slate-700 font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-300"')+'> <i data-lucide="chevron-left" class="w-4 h-4"></i> Câu trước</button>';
+  var allAnswered = answeredCount()===TOTAL;
+  var nextBtn= (state.current===TOTAL-1 || allAnswered)
+    ? '<button onclick="requestSubmit()" class="flex-1 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold flex items-center justify-center gap-2 transition-all duration-300"><i data-lucide="send" class="w-4 h-4"></i> Nộp bài</button>'
+    : '<button onclick="next()" class="flex-1 py-3 rounded-xl bg-slate-700/60 hover:bg-slate-700 font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-300">Câu tiếp theo <i data-lucide="chevron-right" class="w-4 h-4"></i></button>';
+  app.innerHTML=
+  '<header class="grad-header sticky top-0 z-30 border-b border-slate-800 px-4 sm:px-6 py-3">'+
+    '<div class="max-w-5xl mx-auto flex items-center justify-between gap-4">'+
+      '<div class="min-w-0"><h1 class="font-extrabold text-sm sm:text-base truncate">'+TOPIC_NAME+' · '+EXAM_NAME+'</h1>'+
+      '<p class="text-[11px] text-slate-400">Câu '+(state.current+1)+' / '+TOTAL+'</p></div>'+
+      '<div class="flex items-center gap-3 sm:gap-5">'+
+        '<div class="text-right hidden sm:block"><p class="text-[10px] text-slate-400 uppercase tracking-wider">Tiến độ</p><p class="font-bold text-emerald-400">'+pct+'%</p></div>'+
+        '<div class="w-24 sm:w-32 h-1.5 rounded-full bg-slate-700 overflow-hidden"><div class="h-full bg-emerald-400 transition-all duration-500" style="width:'+pct+'%"></div></div>'+
+        '<div id="timerBox" class="flex items-center gap-1.5 font-mono font-bold text-lg"><i data-lucide="timer" class="w-5 h-5"></i><span id="timerText">'+fmtTime(state.timeLeft)+'</span></div>'+
+      '</div>'+
+    '</div>'+
+  '</header>'+
+  '<main class="max-w-5xl mx-auto px-4 sm:px-6 py-6">'+
+    '<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">'+
+      '<section class="lg:col-span-2 space-y-5">'+
+        '<div class="rounded-2xl bg-slate-800/50 border border-slate-700 p-6 shadow-sm">'+
+          '<div class="flex items-start justify-between gap-3 mb-5">'+
+            '<h2 class="text-lg sm:text-xl font-bold leading-snug">'+(state.current+1)+'. '+cur.q+multiBadge+'</h2>'+
+            '<button onclick="toggleFlag()" class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all duration-300 '+flagBtn+'"><i data-lucide="flag" class="w-4 h-4"></i> '+(flagged?'Đã gắn cờ':'Gắn cờ')+'</button>'+
+          '</div>'+
+          blockHtml+
+          '<div class="space-y-3" id="optionsBox">'+optsHtml+'</div>'+
+        '</div>'+
+        '<div class="flex items-center gap-3">'+prevBtn+nextBtn+'</div>'+
+      '</section>'+
+      '<aside class="lg:sticky lg:top-24">'+
+        '<div class="rounded-2xl bg-slate-800/50 border border-slate-700 p-5 shadow-sm">'+
+          '<h3 class="font-bold text-sm mb-1 flex items-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-amber-400"></i> Ma trận câu hỏi</h3>'+
+          '<p class="text-[11px] text-slate-400 mb-4">'+answeredCount()+'/'+TOTAL+' đã làm</p>'+
+          '<div id="gridBox" class="grid grid-cols-5 gap-2"></div>'+
+          '<div class="mt-5 space-y-2 text-[11px] text-slate-400">'+
+            '<div class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-slate-600"></span> Chưa làm</div>'+
+            '<div class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-sky-500"></span> Đã chọn</div>'+
+            '<div class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-amber-400"></span> Đã gắn cờ</div>'+
+          '</div>'+
+        '</div>'+
+      '</aside>'+
+    '</div>'+
+  '</main>';
+  updateGrid();
+  if(window.lucide){ lucide.createIcons(); }
+}
+
+function updateGrid(){
+  var box=$('#gridBox'); if(!box) return;
+  var html='';
+  for(var i=0;i<ITEMS.length;i++){
+    var ans=isAns(i); var flg=!!state.flagged[i]; var cur=(i===state.current);
+    var cls='bg-slate-600 text-white';
+    if(flg){ cls='bg-amber-400 text-slate-900'; } else if(ans){ cls='bg-sky-500 text-white'; }
+    var ring=cur?'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-800':'';
+    html+='<button onclick="goTo('+i+')" class="aspect-square rounded-lg font-bold text-sm flex items-center justify-center transition-all duration-300 hover:scale-105 '+cls+' '+ring+'">'+(i+1)+'</button>';
+  }
+  box.innerHTML=html;
+}
+
+function handleSelect(idx){
+  if(state.finished) return;
+  var it=ITEMS[state.current]; var cur=it.q;
+  if(cur.multi){
+    var arr=state.answers[state.current]||[];
+    if(arr.indexOf(idx)>=0){ arr=arr.filter(function(x){return x!==idx;}); }
+    else { arr.push(idx); }
+    state.answers[state.current]=arr;
+  } else {
+    state.answers[state.current]=idx;
+  }
+  saveAns();
+  var cards=document.querySelectorAll('#optionsBox .opt-card');
+  for(var i=0;i<cards.length;i++){
+    var sel;
+    if(cur.multi){ sel=Array.isArray(state.answers[state.current])&&state.answers[state.current].indexOf(i)>=0; }
+    else { sel=(state.answers[state.current]===i); }
+    if(sel){ cards[i].classList.add('sel'); } else { cards[i].classList.remove('sel'); }
+  }
+  updateGrid();
+}
+function toggleFlag(){ if(state.finished) return; state.flagged[state.current]=!state.flagged[state.current]; saveAns(); renderQuiz(); }
+function goTo(i){ if(state.finished) return; state.current=i; saveAns(); renderQuiz(); window.scrollTo({top:0,behavior:'smooth'}); }
+function next(){ if(state.finished) return; if(state.current<TOTAL-1){ state.current++; saveAns(); renderQuiz(); window.scrollTo({top:0,behavior:'smooth'}); } }
+function prev(){ if(state.finished) return; if(state.current>0){ state.current--; saveAns(); renderQuiz(); window.scrollTo({top:0,behavior:'smooth'}); } }
+
+var timerInt=null;
+function fmtTime(s){ var m=String(Math.floor(s/60)).padStart(2,'0'); var x=String(s%60).padStart(2,'0'); return m+':'+x; }
+function startTimer(){
+  clearInterval(timerInt);
+  timerInt=setInterval(function(){
+    if(state.finished){ clearInterval(timerInt); return; }
+    state.timeLeft--;
+    var txt=$('#timerText'); var box=$('#timerBox');
+    if(txt){ txt.textContent=fmtTime(state.timeLeft); }
+    if(box&&state.timeLeft<=60){ box.classList.add('timer-danger'); }
+    if(state.timeLeft%5===0){ saveTime(); }
+    if(state.timeLeft<=0){ clearInterval(timerInt); forceSubmit(); }
+  },1000);
+}
+
+// BUG FIX: het gio -> khoa moi thao tac va ep nop ngay (khong can bam modal)
+function forceSubmit(){
+  if(state.finished) return;
+  state.finished=true;
+  clearInterval(timerInt);
+  // khoa UI
+  document.getElementById('app').style.pointerEvents='none';
+  document.getElementById('app').style.opacity='0.6';
+  var m=$('#confirmModal');
+  $('#confirmText').innerHTML='⏰ Hết giờ! Hệ thống đang tự động nộp bài...';
+  m.classList.remove('hidden'); m.classList.add('flex');
+  setTimeout(confirmSubmit, 900);
+}
+
+function requestSubmit(auto){
+  if(state.finished) return;
+  var un=TOTAL-answeredCount();
+  var txt='Bạn còn <b class="text-amber-400">'+un+'</b> câu chưa làm. Xác nhận nộp bài?';
+  if(auto){ txt+='<br><span class="text-rose-400 text-xs">(Tự động nộp do hết giờ)</span>'; }
+  $('#confirmText').innerHTML=txt;
+  var m=$('#confirmModal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeConfirm(){ var m=$('#confirmModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+function confirmSubmit(){
+  if(state.finished && document.getElementById('app').style.pointerEvents==='none'){ /* da khoa roi, tiep tuc nop */ }
+  closeConfirm(); clearInterval(timerInt); state.finished=true; localStorage.removeItem(TIME_KEY);
+  var ans={};
+  for(var i=0;i<ITEMS.length;i++){
+    var a=state.answers[i]; var it=ITEMS[i];
+    if(it.multi){ ans[i]=Array.isArray(a)?a:[]; }
+    else { ans[i]=(a!==undefined?a:-1); }
+  }
+  fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic_id:TOPIC_ID,exam_idx:EXAM_IDX,user_name:UNAME,answers:ans})})
+  .then(function(r){ return r.json(); })
+  .then(function(d){ window.location='/result/'+TOPIC_ID+'/'+EXAM_IDX+'?name='+encodeURIComponent(UNAME); });
+}
+
+loadAns(); loadTime(); startTimer(); renderQuiz();
+window.addEventListener('pageshow', function(e){ if(e.persisted){ location.reload(); } });
+</script>
+</body>
+</html>

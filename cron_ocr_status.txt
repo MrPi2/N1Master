@@ -1,0 +1,9 @@
+⚠️ OCR đã xong nhưng parser bắt được quá ít câu hỏi (format OCR khác). Cần Đông Bảo calibrate parser thủ công.
+
+Chi tiết thực tế (auto_ocr_build.py chạy 09:45 15/08):
+- OCR: ĐÃ XONG (ocr_running_pid.txt rỗng, không còn dòng "OCR still running", data ổn định từ 03:00).
+- Build: THẤT BẠI — questions.json CHƯA được tạo.
+- Parser chỉ bắt được 26 câu (từ 2/7 file: "Shin_Kan_zen_Master_N1-Goi 3"=15, "Shin_Kanzen_Master_N1-Dokkai"=8, "20de goukaku N1"=3). 5 file còn lại = 0 câu.
+- Lần build cuối có kết quả (02:48) ghi: "PARSER BATCH QUA IT (<50) -> CAN CALIBRATE THU CONG".
+- Từ 03:00 đến nay script chỉ ghi "data unchanged since last build (result=WARN) -> skip" nên không build lại và cảnh báo bị lấp.
+- Chưa đạt cấu trúc dễ→khó, chưa có câu chọn nhiều đáp án, web chưa sẵn sàng.

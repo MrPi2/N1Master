@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kết quả · N1Master</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body{font-family:'Inter',sans-serif}
+  .grad-header{background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)}
+  .grad-bg{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%)}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+</style>
+</head>
+<body class="grad-bg min-h-screen text-slate-100">
+
+<header class="grad-header border-b border-slate-800 px-4 sm:px-6 py-4">
+  <div class="max-w-3xl mx-auto flex items-center justify-between">
+    <a href="/topic/{{ rec.topic_id }}?name={{ request.args.get('name','') }}" class="flex items-center gap-2 hover:opacity-80 transition-all duration-300">
+      <i data-lucide="book-open" class="w-6 h-6 text-amber-400"></i>
+      <span class="font-bold tracking-tight">N1<span class="text-amber-400">Master</span></span>
+    </a>
+    <a href="/topic/{{ rec.topic_id }}?name={{ request.args.get('name','') }}" class="text-sm text-slate-400 hover:text-amber-400 transition-all duration-300 flex items-center gap-1.5"><i data-lucide="chevron-left" class="w-4 h-4"></i> Bài thi</a>
+  </div>
+</header>
+
+<main class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+  <section class="text-center mb-10">
+    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-1">🎯 Kết quả</h1>
+    <p class="text-slate-400 text-sm">{{ rec.topic }} · Bài {{ rec.exam }} · {{ rec.time }}</p>
+    <div class="w-44 h-44 mx-auto relative mt-6">
+      <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#334155" stroke-width="3"></circle>
+        <circle cx="18" cy="18" r="15.9" fill="none" stroke="{{ '#10b981' if rec.score>=80 else ('#fbbf24' if rec.score>=50 else '#f43f5e') }}" stroke-width="3" stroke-dasharray="{{ rec.score }},100" stroke-linecap="round"></circle>
+      </svg>
+      <div class="absolute inset-0 flex flex-col items-center justify-center">
+        <span class="text-5xl font-extrabold {{ 'text-emerald-400' if rec.score>=80 else ('text-amber-400' if rec.score>=50 else 'text-rose-400') }}">{{ rec.score }}%</span>
+        <span class="text-xs text-slate-400 mt-1">{{ rec.correct }}/{{ rec.total }} đúng</span>
+      </div>
+    </div>
+    {% set rating = 'Xuất sắc' if rec.score>=80 else ('Đạt' if rec.score>=50 else 'Cần cố gắng') %}
+    <span class="inline-flex items-center gap-1.5 mt-5 px-4 py-1.5 rounded-full {{ 'bg-emerald-500/15 text-emerald-400' if rec.score>=80 else ('bg-amber-400/15 text-amber-400' if rec.score>=50 else 'bg-rose-500/15 text-rose-400') }} text-sm font-bold"><i data-lucide="award" class="w-4 h-4"></i> {{ rating }}</span>
+    <div class="flex justify-center gap-6 mt-5 text-sm text-slate-400">
+      <div><i data-lucide="check-circle" class="w-4 h-4 inline text-emerald-400"></i> {{ rec.correct }} đúng</div>
+      <div><i data-lucide="x-circle" class="w-4 h-4 inline text-rose-400"></i> {{ rec.total-rec.correct }} sai</div>
+    </div>
+  </section>
+
+  <div class="flex gap-3 mb-8">
+    <button onclick="renderReview()" class="flex-1 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold flex items-center justify-center gap-2 transition-all duration-300"><i data-lucide="eye" class="w-4 h-4"></i> Xem lại bài thi</button>
+    <a href="/topic/{{ rec.topic_id }}" class="flex-1 py-3.5 rounded-xl bg-slate-700 hover:bg-slate-600 font-semibold flex items-center justify-center gap-2 transition-all duration-300"><i data-lucide="rotate-ccw" class="w-4 h-4"></i> Làm lại</a>
+  </div>
+
+  <div id="reviewBox"></div>
+</main>
+
+<script>
+const DETAIL = {{ rec.detail|tojson }};
+function renderReview(){
+  const box=document.getElementById('reviewBox'); if(!box) return;
+  box.innerHTML = '<h3 class="font-bold text-lg mb-4 flex items-center gap-2"><i data-lucide="list-checks" class="w-5 h-5 text-amber-400"></i> Xem lại chi tiết</h3>' +
+  DETAIL.map((x,i)=>{
+    const isC = x.ok;
+    const rightArr = Array.isArray(x.right)? x.right : [x.right];
+    const chosenArr = Array.isArray(x.chosen)? x.chosen : (x.chosen>=0? [x.chosen] : []);
+    const disp = (val)=> Array.isArray(val)? val.map(v=>x.options[v]).join(' + ') : (val>=0? x.options[val] : '—');
+    const opts = x.options.map((opt,oi)=>{
+      let cls='border-slate-700 bg-slate-900/40';
+      const isRight = rightArr.indexOf(oi)>=0;
+      const isChosen = chosenArr.indexOf(oi)>=0;
+      if(isRight) cls='border-emerald-500 bg-emerald-500/10 text-emerald-300';
+      else if(isChosen) cls='border-rose-500 bg-rose-500/10 text-rose-300';
+      const badge = isRight?'<i data-lucide="check" class="w-4 h-4 text-emerald-400 ml-auto"></i>':(isChosen?'<i data-lucide="x" class="w-4 h-4 text-rose-400 ml-auto"></i>':'');
+      const badgeBg = isRight?'bg-emerald-500 text-white':(isChosen?'bg-rose-500 text-white':'bg-slate-700 text-slate-300');
+      return '<div class="flex items-center gap-3 p-3 rounded-xl border '+cls+'"><span class="w-7 h-7 shrink-0 rounded-lg '+badgeBg+' flex items-center justify-center font-bold text-xs">'+String.fromCharCode(65+oi)+'</span><span class="text-sm">'+opt+'</span>'+badge+'</div>';
+    }).join('');
+    const expl = x.explain ? '<div class="text-xs text-slate-400 bg-slate-900/50 rounded-lg p-3 mt-3"><b class="text-amber-400">Giải thích:</b> '+x.explain+'</div>' : '';
+    const chosenTxt = disp(x.chosen);
+    const rightTxt = disp(x.right);
+    return '<article class="rounded-2xl bg-slate-800/50 border border-slate-700 p-5 mb-4 shadow-sm">'+
+      '<div class="flex items-start gap-3 mb-3"><span class="w-7 h-7 shrink-0 rounded-lg '+(isC?'bg-emerald-500/20 text-emerald-400':'bg-rose-500/20 text-rose-400')+' flex items-center justify-center font-bold text-sm">'+(i+1)+'</span><p class="font-semibold text-slate-100">'+x.q+'</p></div>'+
+      '<div class="space-y-2 mb-2">'+opts+'</div>'+
+      '<p class="text-xs text-slate-400">Bạn chọn: <span class="'+(isC?'text-emerald-400 font-semibold':'text-rose-400 font-semibold')+'">'+chosenTxt+'</span> · Đáp án: <span class="text-emerald-400 font-semibold">'+rightTxt+'</span></p>'+
+      expl+
+    '</article>';
+  }).join('');
+  lucide.createIcons(); box.scrollIntoView({behavior:'smooth'});
+}
+lucide.createIcons();
+</script>
+</body>
+</html>

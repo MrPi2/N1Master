@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chủ đề · N1Master</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style> body{font-family:'Inter',sans-serif} .grad{background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)} </style>
+</head>
+<body class="grad min-h-screen text-slate-100">
+<header class="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between">
+  <div class="flex items-center gap-2">
+    <i data-lucide="book-open" class="w-7 h-7 text-amber-400"></i>
+    <span class="font-bold text-lg tracking-tight">N1<span class="text-amber-400">Master</span></span>
+  </div>
+  <div class="flex items-center gap-3">
+    <span id="hello" class="text-sm text-slate-300"></span>
+    <a href="/" class="text-xs text-slate-400 hover:text-amber-400 transition-all duration-300 flex items-center gap-1"><i data-lucide="log-out" class="w-3.5 h-3.5"></i> Đổi tên</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+  <section class="text-center mb-12">
+    <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4">Chọn chủ đề <span class="text-amber-400">luyện tập</span></h1>
+    <p class="text-slate-400 max-w-xl mx-auto text-sm sm:text-base leading-relaxed">Hệ thống bài kiểm tra từ dễ đến khó, tự chấm điểm và lưu tiến độ.</p>
+  </section>
+
+  <section id="topics" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"></section>
+</main>
+
+<footer class="max-w-6xl mx-auto px-6 py-8 text-center text-slate-500 text-xs border-t border-slate-800">
+  Được tạo bởi <span class="text-amber-400 font-semibold">Đông Bảo</span> · Dữ liệu từ tài liệu N1 chính thống
+</footer>
+
+<script>
+const params = new URLSearchParams(location.search);
+const uname = params.get('name') || localStorage.getItem('n1_user') || '';
+document.getElementById('hello').textContent = '👋 ' + uname;
+if(uname) localStorage.setItem('n1_user', uname);
+
+fetch('/api/topics').then(r=>r.json()).then(topics=>{
+  const box = document.getElementById('topics');
+  topics.forEach(t=>{
+    const diffColors = ['emerald','sky','violet','amber','rose','fuchsia','indigo','cyan','teal','orange'];
+    const c = diffColors[(t.difficulty||1)-1] || 'slate';
+    const card = document.createElement('article');
+    card.className = `group cursor-pointer rounded-2xl bg-slate-800/40 border border-slate-700 p-6 shadow-sm hover:shadow-xl hover:border-amber-400/60 hover:-translate-y-1 transition-all duration-300`;
+    card.innerHTML = `
+      <div class="flex items-start justify-between mb-4">
+        <div class="w-11 h-11 rounded-xl bg-${c}-500/15 flex items-center justify-center">
+          <i data-lucide="layers" class="w-5 h-5 text-${c}-400"></i>
+        </div>
+        <span class="text-[10px] font-bold px-2 py-1 rounded-full bg-slate-700/60 text-slate-300">ĐỘ KHÓ ${t.difficulty}/10</span>
+      </div>
+      <h3 class="text-lg font-bold text-slate-100 mb-1">${t.name}</h3>
+      <p class="text-slate-400 text-sm mb-5">${t.exams} bài kiểm tra · ${t.questions_per_exam} câu/bài</p>
+      <div class="flex items-center gap-1.5 text-sm font-semibold text-amber-400 group-hover:gap-2.5 transition-all duration-300">
+        Bắt đầu <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </div>`;
+    card.onclick = ()=> window.location = `/topic/${t.id}?name=${encodeURIComponent(uname)}`;
+    box.appendChild(card);
+  });
+  lucide.createIcons();
+});
+</script>
+</body>
+</html>

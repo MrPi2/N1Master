@@ -1,0 +1,6 @@
+{
+  "outcome": "parser_low",
+  "last_reported_ts": "2026-08-15T10:33",
+  "detail": "OCR done (7 files, 12140 JP lines, no ocr_all process). Parser extracted only 26/<50 questions -> build aborted (WARN). questions.json NOT regenerated from real OCR. Format uses circled/garbled numbers ①②③④ (I,12,④9,®) and many unnumbered options; parser regex only matches '1. 2. 3. 4.'.",
+  "parse_total": 26
+}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kết quả - {{ name }}</title>
+<style>
+  body { margin:0; background:#0f1419; color:#e6e6e6; padding:20px; max-width:700px; margin:auto; font-family:'Segoe UI',sans-serif; }
+  h1 { color:#ffd700; text-align:center; }
+  .rec { background:#1a2230; border-radius:10px; padding:16px; margin:12px 0; border-left:3px solid #0f0; }
+  .rec.bad { border-left-color:#f55; }
+  .rec h3 { margin:0 0 6px; }
+  .score { font-size:24px; color:#ffd700; }
+  a { color:#9aa; }
+</style>
+</head>
+<body>
+<h1>📊 Kết quả của {{ name }}</h1>
+<a href="/">← Trang chủ</a>
+{% if not recs %}<p style="text-align:center;color:#9aa">Chưa có bài làm nào.</p>{% endif %}
+{% for r in recs %}
+  <div class="rec {{ 'bad' if r.score<50 else '' }}">
+    <h3>{{ r.topic }} - Bài {{ r.exam }}</h3>
+    <span class="score">{{ r.score }}%</span> ({{ r.correct }}/{{ r.total }})<br>
+    <small>{{ r.time }}</small>
+  </div>
+{% endfor %}
+</body>
+</html>

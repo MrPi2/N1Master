@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ topic.name }} · N1Master</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style> body{font-family:'Inter',sans-serif} .grad{background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)} </style>
+</head>
+<body class="grad min-h-screen text-slate-100">
+<header class="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between">
+  <a href="/?name={{ uname }}" class="flex items-center gap-2 hover:opacity-80 transition-all duration-300">
+    <i data-lucide="book-open" class="w-6 h-6 text-amber-400"></i>
+    <span class="font-bold tracking-tight">N1<span class="text-amber-400">Master</span></span>
+  </a>
+  <a href="/?name={{ uname }}" class="text-sm text-slate-400 hover:text-amber-400 transition-all duration-300 flex items-center gap-1.5"><i data-lucide="chevron-left" class="w-4 h-4"></i> Chủ đề</a>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+  <section class="mb-10">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 rounded-xl bg-amber-400/15 flex items-center justify-center"><i data-lucide="layers" class="w-5 h-5 text-amber-400"></i></div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">{{ topic.name }}</h1>
+    </div>
+    <p class="text-slate-400 text-sm">Chọn bài kiểm tra · mỗi bài {{ topic.exams[0].questions|length if topic.exams else 0 }} câu · độ khó tăng dần</p>
+    {% if uname %}<p class="text-xs text-emerald-400 mt-2 flex items-center gap-1.5"><i data-lucide="user-check" class="w-3.5 h-3.5"></i> Đang làm với tên: <b>{{ uname }}</b></p>{% endif %}
+    {% if request.args.get('locked') %}<p class="text-xs text-rose-400 mt-2 flex items-center gap-1.5"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Bài này chưa mở khoá. Hãy hoàn thành bài trước (≥80%) trước.</p>{% endif %}
+  </section>
+
+  <section id="exams" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5"
+    data-topic="{{ topic.id }}" data-name="{{ uname }}"></section>
+</main>
+
+<script>
+const tid = document.getElementById('exams').dataset.topic;
+const uname = document.getElementById('exams').dataset.name;
+const done = {{ done|tojson }};
+const examsData = {{ topic.exams|tojson }};
+
+const grid = document.getElementById('exams');
+examsData.forEach((ex, i)=>{
+  const sc = done[i];
+  const passed = sc !== undefined && sc >= 80;
+  const attempted = sc !== undefined;
+  // mo khoa TU BAI TRONG CUNG DANH MUC: bai dau tien luon mo; bai sau mo khi bai truoc cung danh muc pass>=80
+  const prevSc = i>0 ? done[i-1] : 100;
+  const unlocked = i===0 || (prevSc !== undefined && prevSc >= 80);
+  const card = document.createElement('article');
+  let cardCls, numCls, badgeCls, actionTxt, actionCls;
+  if(!unlocked){
+    cardCls = 'bg-slate-900/40 border-slate-800 opacity-60';
+    numCls = 'bg-slate-800 text-slate-500';
+    badgeCls = 'bg-slate-700 text-slate-500';
+    actionTxt = '🔒 Đã khoá'; actionCls = 'text-slate-500';
+  } else if(passed){
+    cardCls = 'bg-emerald-500/10 border-emerald-500/40';
+    numCls = 'bg-emerald-500/20 text-emerald-400';
+    badgeCls = 'bg-emerald-500 text-white';
+    actionTxt = 'Xem kết quả'; actionCls = 'text-emerald-400';
+  } else if(attempted){
+    cardCls = 'bg-amber-500/10 border-amber-500/50';
+    numCls = 'bg-amber-500/20 text-amber-300';
+    badgeCls = 'bg-amber-400 text-slate-900';
+    actionTxt = 'Đã thi · Làm lại'; actionCls = 'text-amber-300';
+  } else {
+    cardCls = 'bg-slate-800/40 border-slate-700 hover:border-amber-400/60';
+    numCls = 'bg-slate-700/50 text-slate-300';
+    badgeCls = 'bg-slate-600 text-slate-300';
+    actionTxt = 'Làm bài'; actionCls = 'text-amber-400';
+  }
+  card.className = `group relative rounded-2xl border p-5 shadow-sm transition-all duration-300 ${unlocked?'cursor-pointer hover:shadow-xl hover:-translate-y-1':''} ${cardCls}`;
+  const scoreBadge = attempted
+    ? `<span class="absolute top-4 right-4 text-xs font-bold px-2.5 py-1 rounded-full ${badgeCls}">${sc}%</span>`
+    : (unlocked?'<span class="absolute top-4 right-4 text-slate-600"><i data-lucide="circle" class="w-5 h-5"></i></span>':'<span class="absolute top-4 right-4 text-slate-600"><i data-lucide="lock" class="w-5 h-5"></i></span>');
+  card.innerHTML = `
+    ${scoreBadge}
+    <div class="flex items-center gap-2 mb-3">
+      <span class="w-9 h-9 rounded-lg ${numCls} flex items-center justify-center font-bold text-sm">${i+1}</span>
+      ${passed?'<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>':(attempted?'<i data-lucide="rotate-ccw" class="w-4 h-4 text-amber-300"></i>':(unlocked?'':'<i data-lucide="lock" class="w-4 h-4 text-slate-500"></i>'))}
+    </div>
+    <h3 class="font-bold text-slate-100 mb-1 pr-12">${ex.name || ('Bài '+(i+1))}</h3>
+    <p class="text-xs text-slate-400 mb-4">${ex.questions.length} câu · độ khó ${ex.difficulty.toFixed(1)}</p>
+    ${attempted&&!passed?'<p class="text-[11px] text-amber-300/80 mb-2 font-semibold">⚠ Đã thi nhưng chưa đạt (cần ≥80%)</p>':''}
+    ${!unlocked?'<p class="text-[11px] text-slate-500 mb-2">🔒 Hoàn thành bài trước (≥80%) để mở khoá</p>':''}
+    <div class="flex items-center gap-1.5 text-sm font-semibold ${actionCls} group-hover:gap-2.5 transition-all duration-300">
+      ${actionTxt} <i data-lucide="arrow-right" class="w-4 h-4"></i>
+    </div>`;
+  if(unlocked){
+    card.onclick = ()=>{
+      if(attempted){
+        window.location = `/result/${tid}/${i}?name=${encodeURIComponent(uname)}`;
+      } else {
+        window.location = `/exam/${tid}/${i}?name=${encodeURIComponent(uname)}`;
+      }
+    };
+  }
+  grid.appendChild(card);
+});
+lucide.createIcons();
+</script>
+</body>
+</html>

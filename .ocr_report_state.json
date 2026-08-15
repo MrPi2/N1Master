@@ -1,0 +1,6 @@
+{
+  "sig": {"n": 7, "bytes": 608744, "mtime": 1786730699.4},
+  "result": "WARN",
+  "reported_at": "2026-08-15T03:15",
+  "note": "Reported rule#3 (parser too few) to Telegram dm:1080901550. Future identical ticks stay silent; a changed sig re-triggers reporting."
+}
