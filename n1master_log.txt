@@ -1,0 +1,14 @@
+ * Serving Flask app 'app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://192.168.0.100:8080
+Press CTRL+C to quit
+127.0.0.1 - - [15/Aug/2026 18:08:53] "GET /course/goi HTTP/1.1" 200 -
+127.0.0.1 - - [15/Aug/2026 18:08:53] "GET /courses.json HTTP/1.1" 200 -
+127.0.0.1 - - [15/Aug/2026 18:08:54] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [15/Aug/2026 18:08:55] "GET /course/goi HTTP/1.1" 200 -
+127.0.0.1 - - [15/Aug/2026 18:08:56] "GET /courses.json HTTP/1.1" 200 -
+127.0.0.1 - - [15/Aug/2026 18:09:00] "GET /course/goi HTTP/1.1" 200 -
+127.0.0.1 - - [15/Aug/2026 18:09:00] "GET /courses.json HTTP/1.1" 200 -
