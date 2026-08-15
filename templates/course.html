@@ -201,8 +201,8 @@ async function openQuiz(i){
   document.getElementById('quizModal').classList.remove('hidden');
   document.getElementById('quizModal').classList.add('flex');
   const body = document.getElementById('quizBody'); body.innerHTML='<p class="text-slate-400">Đang tải…</p>';
-  // lấy câu thi thật từ API (chỉ khi bấm thi)
-  const q = await fetch(API + "/api/n1master").then(r=>r.json());
+  // lấy câu thi thật từ API (relative → tránh mixed-content/CORS khi chạy trên PA https)
+  const q = await fetch("/api/n1master").then(r=>r.json());
   const td = q.topics.find(t=>t.id===sec.quiz.topicId);
   const ex = td.exams[sec.quiz.examIdx];
   const qs = ex.questions;
