@@ -168,7 +168,7 @@ def results(user_name):
     recs.sort(key=lambda x: x["time"], reverse=True)
     return render_template("results.html", name=user_name, recs=recs)
 
-# ===================== API CHO QUIZ APP + ADMIN DASHBOARD =====================
+# ===================== API CHO ADMIN QUẢN LÝ WEB LEARNING JAPAN =====================
 EXAM_RESULTS = os.path.join(HERE, "exam_results")
 os.makedirs(EXAM_RESULTS, exist_ok=True)
 EXAMS_FILE = os.path.join(HERE, "exams.json")

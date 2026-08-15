@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · N1Master</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style> body{font-family:'Inter',sans-serif} .grad{background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)} </style>
+</head>
+<body class="grad min-h-screen text-slate-100">
+<header class="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between">
+  <div class="flex items-center gap-2">
+    <i data-lucide="shield" class="w-7 h-7 text-rose-400"></i>
+    <span class="font-bold text-lg tracking-tight">N1<span class="text-amber-400">Master</span> <span class="text-rose-400 text-sm">Admin</span></span>
+  </div>
+  <a href="/" class="text-sm text-slate-400 hover:text-amber-400">← Về web</a>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  <section class="flex flex-wrap items-center gap-3 mb-6">
+    <input id="qUser" placeholder="Lọc theo tên user..." class="px-4 py-2 rounded-xl bg-slate-800/60 border border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+    <select id="qTopic" class="px-4 py-2 rounded-xl bg-slate-800/60 border border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+      <option value="">Tất cả mục</option>
+    </select>
+    <button onclick="applyFilter()" class="px-4 py-2 rounded-xl bg-amber-400 text-slate-900 font-semibold text-sm">Lọc</button>
+    <span id="stat" class="text-sm text-slate-400 ml-auto"></span>
+  </section>
+
+  <div class="rounded-2xl bg-slate-800/40 border border-slate-700 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-800/80 text-slate-300 text-left">
+        <tr>
+          <th class="p-3">User</th><th class="p-3">Mục</th><th class="p-3">Bài</th>
+          <th class="p-3">Điểm</th><th class="p-3">Đúng</th><th class="p-3">Thời gian</th><th class="p-3"></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Modal chi tiet -->
+<div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+  <div class="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl bg-slate-800 border border-slate-700 shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="list-checks" class="w-5 h-5 text-amber-400"></i> Chi tiết bài thi</h3>
+      <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div id="modalBody" class="space-y-3"></div>
+  </div>
+</div>
+
+<script>
+const DATA = {{ data|tojson }};
+const topics = [...new Set(DATA.map(d=>d.topic))];
+const sel=document.getElementById('qTopic');
+topics.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); });
+
+function scoreColor(s){ return s>=80?'text-emerald-400':(s>=50?'text-amber-400':'text-rose-400'); }
+
+function render(list){
+  const tb=document.getElementById('rows'); tb.innerHTML='';
+  document.getElementById('stat').textContent='Tổng: '+list.length+' lượt thi';
+  list.forEach((d,i)=>{
+    const tr=document.createElement('tr');
+    tr.className='border-t border-slate-700/60 hover:bg-slate-700/30';
+    tr.innerHTML=`<td class="p-3 font-semibold">${d.user}</td>
+      <td class="p-3">${d.topic}</td>
+      <td class="p-3">Bài ${d.exam}</td>
+      <td class="p-3 font-bold ${scoreColor(d.score)}">${d.score}%</td>
+      <td class="p-3">${d.correct}/${d.total}</td>
+      <td class="p-3 text-slate-400 text-xs">${d.time}</td>
+      <td class="p-3 text-right"><button onclick="showDetail(${i})" class="text-amber-400 hover:underline text-xs">Xem chi tiết</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function applyFilter(){
+  const u=document.getElementById('qUser').value.trim().toLowerCase();
+  const t=document.getElementById('qTopic').value;
+  const f=DATA.filter(d=>(!u||d.user.toLowerCase().includes(u))&&(!t||d.topic===t));
+  render(f);
+}
+function showDetail(i){
+  const d=DATA[i];
+  const body=document.getElementById('modalBody');
+  let html=`<p class="text-sm text-slate-300 mb-3">${d.user} · ${d.topic} · Bài ${d.exam} · <b class="${scoreColor(d.score)}">${d.score}%</b> (${d.correct}/${d.total}) · ${d.time}</p>`;
+  (d.detail||[]).forEach((q,n)=>{
+    const isC=q.ok;
+    const rightArr=Array.isArray(q.right)?q.right:[q.right];
+    const chosenArr=Array.isArray(q.chosen)?q.chosen:(q.chosen>=0?[q.chosen]:[]);
+    const disp=(v)=>Array.isArray(v)?v.map(x=>q.options[x]).join(' + '):(v>=0?q.options[v]:'—');
+    const opts=q.options.map((opt,oi)=>{
+      const ir=rightArr.indexOf(oi)>=0, ic=chosenArr.indexOf(oi)>=0;
+      let c=ir?'border-emerald-500 bg-emerald-500/10 text-emerald-300':(ic?'border-rose-500 bg-rose-500/10 text-rose-300':'border-slate-700 text-slate-300');
+      const badge=ir?'<span class="text-emerald-400 ml-1">✓</span>':(ic?'<span class="text-rose-400 ml-1">✗</span>':'');
+      return `<div class="p-2 rounded-lg border ${c} text-xs">${String.fromCharCode(65+oi)}. ${opt}${badge}</div>`;
+    }).join('');
+    html+=`<div class="rounded-xl border border-slate-700 p-3">
+      <p class="font-semibold text-sm mb-2">${n+1}. ${q.q}</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 mb-2">${opts}</div>
+      <p class="text-xs text-slate-400">Chọn: <span class="${isC?'text-emerald-400':'text-rose-400'}">${disp(q.chosen)}</span> · Đáp án: <span class="text-emerald-400">${disp(q.right)}</span> ${isC?'<span class="text-emerald-400">✓ Đúng</span>':'<span class="text-rose-400">✗ Sai</span>'}</p>
+    </div>`;
+  });
+  body.innerHTML=html;
+  const m=document.getElementById('modal'); m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeModal(){ const m=document.getElementById('modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+render(DATA);
+lucide.createIcons();
+</script>
+</body>
+</html>
