@@ -8,3 +8,9 @@ n1master_log.txt
 admin_log.txt
 .env
 .DS_Store
+
+gen_courses.py
+verify_courses.py
+verify_*.py
+test_*.png
+*.png

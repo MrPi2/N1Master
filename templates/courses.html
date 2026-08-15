@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khóa học · N1Master</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style> body{font-family:'Inter',sans-serif} .fade{animation:fade .4s ease} @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}} </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+<header class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-2 font-extrabold text-xl"><span>📚</span> N1Master</div>
+    <nav class="flex gap-4 text-sm font-semibold">
+      <a href="/" class="hover:underline">← Thoát</a>
+      <a href="/topics" class="hover:underline">Thi tự do</a>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8 fade">
+  <h1 class="text-3xl font-extrabold text-slate-800 mb-1">Khóa học lộ trình N1</h1>
+  <p class="text-slate-500 mb-6">Học lý thuyết từng phần, làm bài kiểm tra đạt ≥80% để mở khóa bài tiếp theo. Tiến độ lưu trên thiết bị của bạn.</p>
+  <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+</main>
+
+<script>
+const API = "http://datnv.pythonanywhere.com";
+function prog(cid){
+  try{ const p = JSON.parse(localStorage.getItem('n1courses')||'{}'); return p[cid]; }catch(e){ return null; }
+}
+async function load(){
+  const c = await fetch("/courses.json");
+  const data = c.ok ? await c.json() : {courses:[]};
+  const grid = document.getElementById('grid');
+  data.courses.forEach(co=>{
+    const st = prog(co.id);
+    const done = st ? st.sections.filter(s=>s.status==='completed').length : 0;
+    const pct = Math.round(done / co.sections.length * 100);
+    const card = document.createElement('a');
+    card.href = "/course/" + co.id;
+    card.className = "group bg-white rounded-2xl shadow-sm border border-slate-200 p-5 hover:border-indigo-400 hover:shadow-md transition-all duration-300";
+    card.innerHTML = `
+      <div class="flex items-center gap-3 mb-3">
+        <span class="text-3xl">${co.icon||'📘'}</span>
+        <div>
+          <h3 class="font-bold text-slate-800 group-hover:text-indigo-600">${co.title}</h3>
+          <p class="text-xs text-slate-400">${co.sections.length} bài · ${co.desc.slice(0,40)}…</p>
+        </div>
+      </div>
+      <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
+        <div class="h-full bg-indigo-500 transition-all" style="width:${pct}%"></div>
+      </div>
+      <p class="text-xs text-slate-500">${done}/${co.sections.length} bài hoàn thành · ${pct}%</p>`;
+    grid.appendChild(card);
+  });
+}
+load();
+</script>
+</body>
+</html>

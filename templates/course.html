@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khóa học · N1Master</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Inter',sans-serif}
+  .fade{animation:fade .35s ease} @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .confetti{position:fixed;width:10px;height:14px;top:-20px;z-index:60;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.9}}
+  .locked{filter:grayscale(.7);opacity:.55}
+  .nav-arrow{transition:all .2s}
+  ::-webkit-scrollbar{width:8px;height:8px} ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px}
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+<!-- CONFETTI LAYER -->
+<div id="confetti" class="pointer-events-none fixed inset-0 z-50 hidden"></div>
+
+<!-- RESULT MODAL -->
+<div id="resultModal" class="fixed inset-0 z-[55] hidden items-center justify-center bg-black/50 p-4">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 text-center fade">
+    <div id="resultIcon" class="text-6xl mb-3">🎉</div>
+    <h3 id="resultTitle" class="text-2xl font-extrabold text-slate-800 mb-1"></h3>
+    <p id="resultMsg" class="text-slate-500 mb-4"></p>
+    <div id="resultScore" class="text-4xl font-extrabold text-indigo-600 mb-5"></div>
+    <div id="resultBtns" class="flex flex-col gap-2"></div>
+  </div>
+</div>
+
+<!-- QUIZ MODAL -->
+<div id="quizModal" class="fixed inset-0 z-[58] hidden bg-slate-900/95 overflow-y-auto">
+  <div class="max-w-3xl mx-auto px-4 py-6">
+    <div class="flex items-center justify-between text-white mb-4">
+      <h3 id="quizTitle" class="font-bold text-lg"></h3>
+      <button onclick="closeQuiz()" class="text-white/70 hover:text-white text-2xl leading-none">✕</button>
+    </div>
+    <div class="bg-white rounded-2xl p-5 shadow-xl">
+      <div class="flex items-center justify-between mb-3 text-sm text-slate-500">
+        <span id="quizProg"></span><span id="quizTimer"></span>
+      </div>
+      <div id="quizBody" class="space-y-4"></div>
+      <button id="quizSubmit" onclick="submitQuiz()" class="mt-5 w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="flex flex-col md:flex-row min-h-screen">
+  <!-- SIDEBAR -->
+  <aside class="md:w-80 bg-white border-r border-slate-200 md:h-screen md:sticky md:top-0 overflow-y-auto">
+    <div class="p-4 border-b border-slate-100">
+      <a href="/courses" class="text-sm text-indigo-600 hover:underline">← Tất cả khóa học</a>
+      <h2 id="courseTitle" class="font-extrabold text-lg text-slate-800 mt-1"></h2>
+      <div class="mt-3">
+        <div class="flex justify-between text-xs text-slate-500 mb-1"><span>Tiến độ</span><span id="pctTxt">0%</span></div>
+        <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="progBar" class="h-full bg-indigo-500 transition-all duration-500" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+    <nav id="secList" class="p-3 space-y-1"></nav>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="flex-1 p-4 sm:p-8 fade">
+    <div id="breadcrumb" class="text-xs text-slate-400 mb-2"></div>
+    <h1 id="lessonTitle" class="text-2xl font-extrabold text-slate-800"></h1>
+    <p id="lessonMeta" class="text-sm text-slate-400 mb-5"></p>
+    <article id="theory" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4"></article>
+    <div id="lessonNav" class="mt-6 flex flex-col sm:flex-row gap-3"></div>
+  </main>
+</div>
+
+<script>
+const API = "http://datnv.pythonanywhere.com";
+const COURSE_ID = "{{ course_id }}";
+let COURSE = null, QUESTIONS = null, activeIdx = 0, quiz = {answers:{}, start:0, timer:null};
+
+/* ---------- STATE / LOCALSTORAGE ---------- */
+function loadState(){
+  try{ return JSON.parse(localStorage.getItem('n1courses')||'{}'); }catch(e){ return {}; }
+}
+function saveState(s){ localStorage.setItem('n1courses', JSON.stringify(s)); }
+function courseState(){
+  const s = loadState();
+  if(!s[COURSE_ID]){
+    s[COURSE_ID] = { sections: COURSE.sections.map((sec,i)=>({
+      status: i===0 ? 'unlocked' : 'locked', quizScore: null
+    }))};
+    saveState(s);
+  }
+  return s[COURSE_ID];
+}
+function setSection(idx, patch){
+  const s = loadState();
+  Object.assign(s[COURSE_ID].sections[idx], patch);
+  saveState(s);
+}
+
+/* ---------- INIT ---------- */
+async function init(){
+  const [c, q] = await Promise.all([
+    fetch("/courses.json").then(r=>r.json()),
+    fetch(API + "/api/n1master").then(r=>r.json())
+  ]);
+  COURSE = c.courses.find(x=>x.id===COURSE_ID);
+  QUESTIONS = q;
+  if(!COURSE){ document.body.innerHTML = '<p class="p-8">Không tìm thấy khóa học.</p>'; return; }
+  document.getElementById('courseTitle').textContent = COURSE.title;
+  renderSidebar();
+  renderLesson(0);
+}
+function topicData(tid){ return QUESTIONS.topics.find(t=>t.id===tid); }
+
+/* ---------- SIDEBAR ---------- */
+function renderSidebar(){
+  const st = courseState();
+  const done = st.sections.filter(s=>s.status==='completed').length;
+  const pct = Math.round(done / st.sections.length * 100);
+  document.getElementById('pctTxt').textContent = pct + '%';
+  document.getElementById('progBar').style.width = pct + '%';
+  const list = document.getElementById('secList'); list.innerHTML='';
+  COURSE.sections.forEach((sec,i)=>{
+    const s = st.sections[i];
+    const btn = document.createElement('button');
+    btn.className = 'w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-2 text-sm transition-all duration-200 ' +
+      (i===activeIdx ? 'bg-indigo-100 text-indigo-700 font-semibold ' : 'hover:bg-slate-50 text-slate-600 ') +
+      (s.status==='locked' ? 'locked ' : '');
+    let icon = '⚪';
+    if(s.status==='completed') icon = '✅';
+    else if(s.status==='unlocked') icon = '📖';
+    else icon = '🔒';
+    btn.innerHTML = `<span>${icon}</span><span class="flex-1">${sec.title}</span>` +
+      (s.quizScore!=null ? `<span class="text-xs ${s.quizScore>=sec.quiz.passScore?'text-emerald-600':'text-rose-500'}">${s.quizScore}đ</span>`:'');
+    btn.onclick = ()=>{ if(s.status!=='locked'){ activeIdx=i; renderSidebar(); renderLesson(i); } };
+    list.appendChild(btn);
+  });
+}
+
+/* ---------- LESSON ---------- */
+function renderLesson(i){
+  activeIdx = i;
+  const sec = COURSE.sections[i];
+  const st = courseState().sections[i];
+  document.getElementById('breadcrumb').textContent = COURSE.title + ' › ' + sec.title;
+  document.getElementById('lessonTitle').textContent = sec.title;
+  document.getElementById('lessonMeta').textContent = '⏱ ' + sec.duration + ' · ' + sec.theory.length + ' mục lý thuyết';
+  // theory
+  const th = document.getElementById('theory'); th.innerHTML='';
+  sec.theory.forEach((item,idx)=>{
+    const card = document.createElement('div');
+    card.className = 'rounded-xl border border-slate-100 bg-slate-50 p-4';
+    card.innerHTML = `<p class="font-semibold text-slate-700 mb-1">${idx+1}. ${escapeHtml(item.q)}</p>` +
+      (item.options.length ? `<ul class="text-sm text-slate-500 ml-4 list-disc">${item.options.map((o,oi)=>`<li class="${oi===item.answer?'text-emerald-600 font-medium':''}">${oi===item.answer?'✓ ':''}${escapeHtml(o)}</li>`).join('')}</ul>`:'') +
+      (item.explain ? `<p class="text-xs text-indigo-500 mt-2">💡 ${escapeHtml(item.explain)}</p>`:'');
+    th.appendChild(card);
+  });
+  // nav
+  const nav = document.getElementById('lessonNav'); nav.innerHTML='';
+  const prev = document.createElement('button');
+  prev.className='px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 transition-all';
+  prev.textContent = '← Bài trước'; prev.disabled = i===0;
+  prev.className += i===0 ? ' opacity-40 cursor-not-allowed':'';
+  prev.onclick = ()=>{ if(i>0){ activeIdx=i-1; renderSidebar(); renderLesson(i-1); } };
+  const next = document.createElement('button');
+  next.className='px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 transition-all';
+  next.textContent='Bài sau →'; next.disabled = i===COURSE.sections.length-1;
+  next.className += i===COURSE.sections.length-1 ? ' opacity-40 cursor-not-allowed':'';
+  next.onclick = ()=>{ if(i<COURSE.sections.length-1){ activeIdx=i+1; renderSidebar(); renderLesson(i+1); } };
+  const action = document.createElement('button');
+  if(st.status==='completed'){
+    action.className='flex-1 px-4 py-2.5 rounded-xl bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition-all';
+    action.textContent='✓ Đã xong · Làm lại bài kiểm tra';
+    action.onclick=()=>openQuiz(i);
+  } else {
+    action.className='flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all shadow';
+    action.textContent='Làm bài kiểm tra để qua bài →';
+    action.onclick=()=>openQuiz(i);
+  }
+  nav.append(prev, action, next);
+}
+
+/* ---------- QUIZ ---------- */
+function openQuiz(i){
+  const sec = COURSE.sections[i];
+  const td = topicData(sec.quiz.topicId);
+  const ex = td.exams[sec.quiz.examIdx];
+  const qs = ex.questions;
+  quiz = {i, qs, answers:{}, start:Date.now(), timer:null};
+  document.getElementById('quizTitle').textContent = 'Bài kiểm tra · ' + sec.title;
+  const body = document.getElementById('quizBody'); body.innerHTML='';
+  qs.forEach((qn,idx)=>{
+    const wrap = document.createElement('div'); wrap.className='rounded-xl border border-slate-200 p-4';
+    wrap.innerHTML = `<p class="font-medium text-slate-800 mb-2">${idx+1}. ${escapeHtml(qn.q)}</p>` +
+      `<div class="grid sm:grid-cols-2 gap-2">${qn.options.map((o,oi)=>`
+        <label class="flex items-center gap-2 p-2.5 rounded-lg border border-slate-200 hover:border-indigo-400 cursor-pointer transition-all">
+          <input type="radio" name="q${idx}" value="${oi}" onchange="quiz.answers[${idx}]=${oi}" class="accent-indigo-600">
+          <span class="text-sm text-slate-600">${escapeHtml(o)}</span>
+        </label>`).join('')}</div>`;
+    body.appendChild(wrap);
+  });
+  document.getElementById('quizProg').textContent = qs.length + ' câu · Đạt ≥ ' + sec.quiz.passScore + '%';
+  document.getElementById('quizTimer').textContent = '0:00';
+  document.getElementById('quizModal').classList.remove('hidden');
+  document.getElementById('quizModal').classList.add('flex');
+  quiz.timer = setInterval(()=>{
+    const s = Math.floor((Date.now()-quiz.start)/1000);
+    document.getElementById('quizTimer').textContent = Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  },1000);
+}
+function closeQuiz(){
+  clearInterval(quiz.timer);
+  document.getElementById('quizModal').classList.add('hidden');
+  document.getElementById('quizModal').classList.remove('flex');
+}
+function submitQuiz(){
+  const sec = COURSE.sections[quiz.i];
+  const total = quiz.qs.length;
+  let correct = 0;
+  quiz.qs.forEach((qn,idx)=>{ if(quiz.answers[idx]===qn.answer) correct++; });
+  const score = Math.round(correct/total*100);
+  clearInterval(quiz.timer);
+  closeQuiz();
+  showResult(quiz.i, score, sec.quiz.passScore);
+}
+function showResult(i, score, pass){
+  const passed = score >= pass;
+  const st = courseState().sections[i];
+  setSection(i, {quizScore: score, status: passed ? 'completed' : st.status});
+  if(passed && i < COURSE.sections.length-1){
+    const ns = courseState().sections[i+1];
+    if(ns.status==='locked') setSection(i+1, {status:'unlocked'});
+  }
+  const modal = document.getElementById('resultModal');
+  modal.classList.remove('hidden'); modal.classList.add('flex');
+  document.getElementById('resultIcon').textContent = passed ? '🎉' : '📉';
+  document.getElementById('resultTitle').textContent = passed ? 'Chúc mừng!' : 'Chưa đạt';
+  document.getElementById('resultMsg').textContent = passed
+    ? `Bạn đã đạt ${score}% (cần ${pass}%). Bài tiếp theo đã mở khóa!`
+    : `Bạn đạt ${score}% (cần ${pass}% để qua bài). Hãy ôn lại lý thuyết!`;
+  document.getElementById('resultScore').textContent = score + '%';
+  const btns = document.getElementById('resultBtns'); btns.innerHTML='';
+  if(passed){
+    if(i < COURSE.sections.length-1){
+      const b=document.createElement('button');
+      b.className='w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all';
+      b.textContent='Tiếp tục bài học tiếp theo →';
+      b.onclick=()=>{ modal.classList.add('hidden'); modal.classList.remove('flex'); activeIdx=i+1; renderSidebar(); renderLesson(i+1); };
+      btns.appendChild(b);
+    }
+    const r=document.createElement('button');
+    r.className='w-full py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 transition-all';
+    r.textContent='Xem lại lý thuyết';
+    r.onclick=()=>{ modal.classList.add('hidden'); modal.classList.remove('flex'); renderSidebar(); renderLesson(i); };
+    btns.appendChild(r);
+    fireConfetti();
+  } else {
+    const a=document.createElement('button');
+    a.className='w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all';
+    a.textContent='Làm lại bài kiểm tra';
+    a.onclick=()=>{ modal.classList.add('hidden'); modal.classList.remove('flex'); openQuiz(i); };
+    btns.appendChild(a);
+    const b=document.createElement('button');
+    b.className='w-full py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-100 transition-all';
+    b.textContent='Xem lại lý thuyết';
+    b.onclick=()=>{ modal.classList.add('hidden'); modal.classList.remove('flex'); renderLesson(i); };
+    btns.appendChild(b);
+  }
+  renderSidebar();
+}
+
+/* ---------- CONFETTI ---------- */
+function fireConfetti(){
+  const box=document.getElementById('confetti'); box.classList.remove('hidden'); box.innerHTML='';
+  const colors=['#6366f1','#ec4899','#10b981','#f59e0b','#3b82f6'];
+  for(let i=0;i<80;i++){
+    const c=document.createElement('div'); c.className='confetti';
+    c.style.left=Math.random()*100+'vw';
+    c.style.background=colors[i%colors.length];
+    c.style.animationDuration=(2+Math.random()*2)+'s';
+    c.style.animationDelay=(Math.random()*0.5)+'s';
+    box.appendChild(c);
+  }
+  setTimeout(()=>{ box.classList.add('hidden'); box.innerHTML=''; }, 4000);
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+init();
+</script>
+</body>
+</html>

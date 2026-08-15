@@ -262,6 +262,27 @@ def api_n1master_put():
     json.dump(data, open(QUESTIONS_FILE, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     return jsonify({"ok": True, "topics": len(data["topics"])})
 
+# ===================== TÍNH NĂNG KHÓA HỌC (Course / Learning Path) =====================
+# Chỉ THÊM mới, KHÔNG sửa phần thi cũ (/exam, /submit, /topic, exam.html, results.html)
+COURSES_FILE = os.path.join(DATA, "courses.json")
+
+def load_courses():
+    if os.path.exists(COURSES_FILE):
+        return json.load(open(COURSES_FILE, encoding="utf-8"))
+    return {"courses": []}
+
+@app.route("/courses")
+def courses_hub():
+    return render_template("courses.html")
+
+@app.route("/courses.json")
+def courses_json():
+    return jsonify(load_courses())
+
+@app.route("/course/<course_id>")
+def course_player(course_id):
+    return render_template("course.html", course_id=course_id)
+
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 8080))
