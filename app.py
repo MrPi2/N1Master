@@ -224,10 +224,31 @@ def api_submit():
 @app.route("/api/results", methods=["GET"])
 def api_results():
     out = []
+    # 1) exam_results/ (từ API động /api/submit)
     for f in os.listdir(EXAM_RESULTS):
         if f.endswith(".json"):
             try: out.append(json.load(open(os.path.join(EXAM_RESULTS, f), encoding="utf-8")))
             except: pass
+    # 2) RESULTS/ (từ N1Master cũ /submit) - chuẩn hóa sang format Admin
+    for f in os.listdir(RESULTS):
+        if not f.endswith(".json"): continue
+        try:
+            r = json.load(open(os.path.join(RESULTS, f), encoding="utf-8"))
+            out.append({
+                "id": f.replace(".json", ""),
+                "user": r.get("user", "anonymous"),
+                "exam": r.get("topic_id") or "n1master",
+                "examTitle": r.get("topic") or "N1Master",
+                "score": r.get("score", 0),
+                "correct": r.get("correct", 0),
+                "total": r.get("total", 0),
+                "passed": r.get("score", 0) >= 80,
+                "timeSec": 0,
+                "submittedAt": (r.get("time") or "").replace(" ", "T"),
+                "answers": [],
+                "legacy": True,
+            })
+        except: pass
     out.sort(key=lambda x: x.get("submittedAt", ""), reverse=True)
     return jsonify(out)
 
