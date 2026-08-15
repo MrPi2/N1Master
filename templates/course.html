@@ -201,18 +201,14 @@ async function openQuiz(i){
   document.getElementById('quizModal').classList.remove('hidden');
   document.getElementById('quizModal').classList.add('flex');
   const body = document.getElementById('quizBody'); body.innerHTML='<p class="text-slate-400">Đang tải…</p>';
-  // lấy câu thi thật từ API (relative → tránh mixed-content/CORS khi chạy trên PA https)
-  const q = await fetch("/api/n1master").then(r=>r.json());
-  const td = q.topics.find(t=>t.id===sec.quiz.topicId);
-  const ex = td.exams[sec.quiz.examIdx];
-  const qs = ex.questions;
+  // dùng quizPreview (5-7 câu từ bài học, nhẹ, có sẵn audio cho nghe hiểu)
+  const qs = sec.quizPreview || [];
   quiz = {i, qs, answers:{}, start:Date.now(), timer:null};
   document.getElementById('quizTitle').textContent = 'Bài kiểm tra · ' + sec.title;
   body.innerHTML='';
   qs.forEach((qn,idx)=>{
-    const preview = (sec.quiz.isAudio && COURSE.sections[i].quizPreview) ? COURSE.sections[i].quizPreview[idx] : null;
-    const audioHtml = (preview && preview.audio)
-      ? `<audio controls class="w-full mb-2"><source src="${preview.audio}" type="audio/mpeg">Trình duyệt không hỗ trợ audio.</audio>`
+    const audioHtml = (sec.quiz.isAudio && qn.audio)
+      ? `<audio controls class="w-full mb-2"><source src="${qn.audio}" type="audio/mpeg">Trình duyệt không hỗ trợ audio.</audio>`
       : '';
     const wrap = document.createElement('div'); wrap.className='rounded-xl border border-slate-200 p-4';
     wrap.innerHTML = audioHtml +
