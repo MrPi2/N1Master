@@ -168,6 +168,12 @@ def results(user_name):
     recs.sort(key=lambda x: x["time"], reverse=True)
     return render_template("results.html", name=user_name, recs=recs)
 
+# ===================== THI TRẮC NGHIỆM (client thi qua API) =====================
+@app.route("/thi")
+@app.route("/thi/")
+def thi_page():
+    return render_template("thi.html")
+
 # ===================== API CHO ADMIN QUẢN LÝ WEB LEARNING JAPAN =====================
 EXAM_RESULTS = os.path.join(HERE, "exam_results")
 os.makedirs(EXAM_RESULTS, exist_ok=True)
