@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chọn chủ đề · N1Master</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style> body{font-family:'Inter',sans-serif} .grad{background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)} </style>
+</head>
+<body class="grad min-h-screen text-slate-100">
+<main class="max-w-3xl mx-auto px-4 py-10">
+  <div class="flex items-center justify-between mb-8">
+    <div class="inline-flex items-center gap-2">
+      <i data-lucide="book-open" class="w-7 h-7 text-amber-400"></i>
+      <span class="font-extrabold text-xl">N1<span class="text-amber-400">Master</span></span>
+    </div>
+    <span id="userTag" class="text-sm text-slate-400"></span>
+  </div>
+  <h1 class="text-2xl font-bold mb-1">Chọn chủ đề luyện thi N1</h1>
+  <p class="text-slate-400 text-sm mb-8">Chạm vào chủ đề để bắt đầu làm bài</p>
+  <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+  <a href="/" class="block text-center text-slate-500 text-xs mt-8 hover:text-amber-400">Đổi tên · Đăng xuất</a>
+</main>
+<script>
+const NAME = new URLSearchParams(location.search).get('name') || localStorage.getItem('n1_user') || 'anonymous';
+localStorage.setItem('n1_user', NAME);
+document.getElementById('userTag').textContent = '👤 ' + NAME;
+const ICONS = {goi:'spell-check', kanji:'pen-tool', dokkai:'book-open', bunpou:'git-branch', chokai:'ear'};
+const NAMES = {goi:'Từ vựng', kanji:'Kanji', dokkai:'Đọc hiểu', bunpou:'Ngữ pháp', chokai:'Nghe hiểu'};
+fetch('/api/topics').then(r=>r.json()).then(list=>{
+  document.getElementById('grid').innerHTML = list.map(t=>`
+    <a href="/topic/${t.id}?name=${encodeURIComponent(NAME)}" class="rounded-2xl bg-slate-800/50 border border-slate-700 p-5 hover:border-amber-400 transition-all duration-300">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center"><i data-lucide="${ICONS[t.id]||'book'}" class="w-5 h-5"></i></span>
+        <div>
+          <p class="font-bold text-slate-100">${NAMES[t.id]||t.name}</p>
+          <p class="text-xs text-slate-400">${t.exams} bài · ${t.questions_per_exam} câu/bài</p>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500">Độ khó: ${t.difficulty||'-'}</p>
+    </a>`).join('');
+  lucide.createIcons();
+}).catch(()=>{ document.getElementById('grid').innerHTML = '<p class="text-slate-400">Không tải được danh sách chủ đề.</p>'; });
+</script>
+</body>
+</html>

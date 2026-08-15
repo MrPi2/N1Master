@@ -52,6 +52,10 @@ def topic_page(topic_id):
                 except: pass
     return render_template("topic.html", topic=topic, uname=uname, done=done)
 
+@app.route("/topics")
+def topics_page():
+    return render_template("topics.html")
+
 @app.route("/")
 def index():
     return render_template("index.html")
