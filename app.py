@@ -56,9 +56,30 @@ def topic_page(topic_id):
 def index():
     return render_template("index.html")
 
-@app.route("/home")
-def home():
-    return render_template("home.html")
+@app.route("/admin")
+def admin():
+    pin = request.args.get("pin", "")
+    if pin != "n1admin":
+        return """<!DOCTYPE html><html><head><meta charset="utf-8"><title>Admin Login</title>
+        <script src="https://cdn.tailwindcss.com"></script></head>
+        <body class="min-h-screen bg-slate-900 flex items-center justify-center text-slate-100">
+        <form method="get" class="bg-slate-800 p-8 rounded-2xl shadow-xl text-center">
+          <h1 class="font-bold mb-4">Admin N1Master</h1>
+          <input name="pin" placeholder="Ma pin" class="px-4 py-2 rounded-lg bg-slate-900 border border-slate-700 mb-3 w-full">
+          <button class="w-full py-2 rounded-lg bg-amber-400 text-slate-900 font-bold">Vao</button>
+          <p class="text-xs text-slate-500 mt-3">Mac dinh: n1admin</p>
+        </form></body></html>"""
+    recs=[]
+    for f in os.listdir(RESULTS):
+        if not f.endswith('.json'): continue
+        try:
+            d=json.load(open(os.path.join(RESULTS,f),encoding='utf-8'))
+            recs.append({'user':d.get('user','?'),'topic':d.get('topic','?'),'topic_id':d.get('topic_id',''),
+                         'exam':d.get('exam',0),'score':d.get('score',0),'correct':d.get('correct',0),
+                         'total':d.get('total',0),'time':d.get('time',''),'detail':d.get('detail',[])})
+        except: pass
+    recs.sort(key=lambda x:x['time'],reverse=True)
+    return render_template("admin.html", data=recs)
 
 @app.route("/exam/<topic_id>/<int:exam_idx>")
 def exam(topic_id, exam_idx):
@@ -146,6 +167,65 @@ def results(user_name):
             recs.append(json.load(open(os.path.join(RESULTS, f), encoding="utf-8")))
     recs.sort(key=lambda x: x["time"], reverse=True)
     return render_template("results.html", name=user_name, recs=recs)
+
+# ===================== API CHO QUIZ APP + ADMIN DASHBOARD =====================
+EXAM_RESULTS = os.path.join(HERE, "exam_results")
+os.makedirs(EXAM_RESULTS, exist_ok=True)
+EXAMS_FILE = os.path.join(HERE, "exams.json")
+
+@app.after_request
+def cors_exam(resp):
+    if request.path.startswith("/api/"):
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        resp.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+        resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return resp
+
+@app.route("/api/exams", methods=["GET"])
+def api_exams():
+    p = EXAMS_FILE
+    if os.path.exists(p):
+        return jsonify(json.load(open(p, encoding="utf-8")))
+    return jsonify([])
+
+@app.route("/api/exams", methods=["PUT", "OPTIONS"])
+def api_save_exams():
+    if request.method == "OPTIONS": return ("", 204)
+    data = request.get_json(silent=True)
+    if not isinstance(data, list): return jsonify({"ok": False, "error": "expected array"}), 400
+    json.dump(data, open(EXAMS_FILE, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    return jsonify({"ok": True, "count": len(data)})
+
+@app.route("/api/submit", methods=["POST", "OPTIONS"])
+def api_submit():
+    if request.method == "OPTIONS": return ("", 204)
+    data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+    user = (data.get("user") or "anonymous").strip() or "anonymous"
+    rec = {
+        "id": "SUB" + uuid.uuid4().hex[:8],
+        "user": user,
+        "exam": data.get("exam") or "quizapp_vocab",
+        "examTitle": data.get("examTitle") or "Từ vựng N1 (100 câu)",
+        "score": data.get("score", 0),
+        "correct": data.get("correct", 0),
+        "total": data.get("total", 0),
+        "passed": data.get("score", 0) >= (data.get("passingScore") or 80),
+        "timeSec": data.get("timeSec", 0),
+        "submittedAt": datetime.now().isoformat(),
+        "answers": data.get("answers", []),
+    }
+    json.dump(rec, open(os.path.join(EXAM_RESULTS, f"{rec['id']}.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    return jsonify({"ok": True, "id": rec["id"]})
+
+@app.route("/api/results", methods=["GET"])
+def api_results():
+    out = []
+    for f in os.listdir(EXAM_RESULTS):
+        if f.endswith(".json"):
+            try: out.append(json.load(open(os.path.join(EXAM_RESULTS, f), encoding="utf-8")))
+            except: pass
+    out.sort(key=lambda x: x.get("submittedAt", ""), reverse=True)
+    return jsonify(out)
 
 if __name__ == "__main__":
     import os
