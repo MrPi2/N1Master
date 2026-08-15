@@ -34,3 +34,4 @@ Press CTRL+C to quit
 127.0.0.1 - - [15/Aug/2026 15:21:58] "GET /api/results HTTP/1.1" 200 -
 127.0.0.1 - - [15/Aug/2026 15:22:00] "GET /api/results HTTP/1.1" 200 -
 127.0.0.1 - - [15/Aug/2026 15:22:00] "GET /api/results HTTP/1.1" 200 -
+127.0.0.1 - - [15/Aug/2026 15:31:00] "GET / HTTP/1.1" 200 -

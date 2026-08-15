@@ -1,6 +1,10 @@
 hf_space/
 results/
+exam_results/
 __pycache__/
 *.pyc
 flask_log.txt
+n1master_log.txt
+admin_log.txt
 .env
+.DS_Store
