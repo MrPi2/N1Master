@@ -218,10 +218,17 @@ def api_results():
         if not f.endswith(".json"): continue
         try:
             r = json.load(open(os.path.join(RESULTS, f), encoding="utf-8"))
+            # filename: user_topic_examIdx_uuid.json
+            parts = f[:-5].split("_")
+            exam_idx = 0
+            if len(parts) >= 3:
+                try: exam_idx = int(parts[2])
+                except: exam_idx = 0
             out.append({
                 "id": f.replace(".json", ""),
                 "user": r.get("user", "anonymous"),
                 "exam": r.get("topic_id") or "n1master",
+                "examIdx": exam_idx,
                 "examTitle": r.get("topic") or "N1Master",
                 "score": r.get("score", 0),
                 "correct": r.get("correct", 0),
@@ -230,6 +237,7 @@ def api_results():
                 "timeSec": 0,
                 "submittedAt": (r.get("time") or "").replace(" ", "T"),
                 "answers": [],
+                "detail": r.get("detail", []),
                 "legacy": True,
             })
         except: pass
