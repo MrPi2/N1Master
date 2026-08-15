@@ -104,18 +104,20 @@ function setSection(idx, patch){
 
 /* ---------- INIT ---------- */
 async function init(){
-  const [c, q] = await Promise.all([
-    fetch("/courses.json").then(r=>r.json()),
-    fetch(API + "/api/n1master").then(r=>r.json())
-  ]);
-  COURSE = c.courses.find(x=>x.id===COURSE_ID);
-  QUESTIONS = q;
-  if(!COURSE){ document.body.innerHTML = '<p class="p-8">Không tìm thấy khóa học.</p>'; return; }
-  document.getElementById('courseTitle').textContent = COURSE.title;
-  renderSidebar();
-  renderLesson(0);
+  try {
+    const c = await fetch("/courses.json");
+    if(!c.ok) throw new Error("courses.json " + c.status);
+    const data = await c.json();
+    COURSE = data.courses.find(x=>x.id===COURSE_ID);
+    if(!COURSE){ document.getElementById('courseTitle').textContent = "Không tìm thấy khóa học."; return; }
+    document.getElementById('courseTitle').textContent = COURSE.title;
+    renderSidebar();
+    renderLesson(0);
+  } catch(e){
+    document.getElementById('courseTitle').textContent = "Lỗi tải dữ liệu: " + e.message;
+    console.error(e);
+  }
 }
-function topicData(tid){ return QUESTIONS.topics.find(t=>t.id===tid); }
 
 /* ---------- SIDEBAR ---------- */
 function renderSidebar(){
@@ -186,14 +188,20 @@ function renderLesson(i){
 }
 
 /* ---------- QUIZ ---------- */
-function openQuiz(i){
+async function openQuiz(i){
   const sec = COURSE.sections[i];
-  const td = topicData(sec.quiz.topicId);
+  document.getElementById('quizTitle').textContent = 'Đang tải bài kiểm tra…';
+  document.getElementById('quizModal').classList.remove('hidden');
+  document.getElementById('quizModal').classList.add('flex');
+  const body = document.getElementById('quizBody'); body.innerHTML='<p class="text-slate-400">Đang tải…</p>';
+  // lấy câu thi thật từ API (chỉ khi bấm thi)
+  const q = await fetch(API + "/api/n1master").then(r=>r.json());
+  const td = q.topics.find(t=>t.id===sec.quiz.topicId);
   const ex = td.exams[sec.quiz.examIdx];
   const qs = ex.questions;
   quiz = {i, qs, answers:{}, start:Date.now(), timer:null};
   document.getElementById('quizTitle').textContent = 'Bài kiểm tra · ' + sec.title;
-  const body = document.getElementById('quizBody'); body.innerHTML='';
+  body.innerHTML='';
   qs.forEach((qn,idx)=>{
     const wrap = document.createElement('div'); wrap.className='rounded-xl border border-slate-200 p-4';
     wrap.innerHTML = `<p class="font-medium text-slate-800 mb-2">${idx+1}. ${escapeHtml(qn.q)}</p>` +
@@ -206,8 +214,6 @@ function openQuiz(i){
   });
   document.getElementById('quizProg').textContent = qs.length + ' câu · Đạt ≥ ' + sec.quiz.passScore + '%';
   document.getElementById('quizTimer').textContent = '0:00';
-  document.getElementById('quizModal').classList.remove('hidden');
-  document.getElementById('quizModal').classList.add('flex');
   quiz.timer = setInterval(()=>{
     const s = Math.floor((Date.now()-quiz.start)/1000);
     document.getElementById('quizTimer').textContent = Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
