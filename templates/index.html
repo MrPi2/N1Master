@@ -53,7 +53,7 @@ function enter(){
   const name = input.value.trim();
   if(!name){ err.classList.remove('hidden'); input.focus(); return; }
   localStorage.setItem(NAME_KEY, name);
-  window.location = '/?name=' + encodeURIComponent(name);
+  window.location = '/topic/goi?name=' + encodeURIComponent(name);
 }
 
 btn.onclick = enter;
