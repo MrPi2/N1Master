@@ -237,6 +237,24 @@ def api_results():
     out.sort(key=lambda x: x.get("submittedAt", ""), reverse=True)
     return jsonify(out)
 
+# ===================== API QUẢN LÝ N1MASTER (questions.json) =====================
+QUESTIONS_FILE = os.path.join(DATA, "questions.json")
+
+@app.route("/api/n1master", methods=["GET"])
+def api_n1master_get():
+    if os.path.exists(QUESTIONS_FILE):
+        return jsonify(json.load(open(QUESTIONS_FILE, encoding="utf-8")))
+    return jsonify({"topics": []})
+
+@app.route("/api/n1master", methods=["PUT", "OPTIONS"])
+def api_n1master_put():
+    if request.method == "OPTIONS": return ("", 204)
+    data = request.get_json(force=True, silent=True)
+    if not isinstance(data, dict) or "topics" not in data:
+        return jsonify({"ok": False, "error": "expected {topics:[...]}"}), 400
+    json.dump(data, open(QUESTIONS_FILE, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    return jsonify({"ok": True, "topics": len(data["topics"])})
+
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 8080))
