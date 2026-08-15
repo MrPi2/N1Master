@@ -14,6 +14,19 @@
   .locked{filter:grayscale(.7);opacity:.55}
   .nav-arrow{transition:all .2s}
   ::-webkit-scrollbar{width:8px;height:8px} ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px}
+  .prose-n1 h1{font-size:1.5rem;font-weight:800;color:#1e293b;margin:.6em 0 .3em}
+  .prose-n1 h2{font-size:1.2rem;font-weight:700;color:#4338ca;margin:.8em 0 .4em;border-left:4px solid #6366f1;padding-left:.5em}
+  .prose-n1 h3{font-size:1.05rem;font-weight:700;color:#0f172a;margin:.7em 0 .3em}
+  .prose-n1 p{color:#334155;line-height:1.7;margin:.4em 0}
+  .prose-n1 ul{list-style:disc;padding-left:1.4em;color:#334155;line-height:1.7;margin:.3em 0}
+  .prose-n1 ol{list-style:decimal;padding-left:1.4em;color:#334155;line-height:1.7;margin:.3em 0}
+  .prose-n1 li{margin:.2em 0}
+  .prose-n1 strong{color:#0f172a;font-weight:700}
+  .prose-n1 table{border-collapse:collapse;width:100%;margin:.6em 0;font-size:.9rem}
+  .prose-n1 th,.prose-n1 td{border:1px solid #e2e8f0;padding:.5em .7em;text-align:left;color:#334155}
+  .prose-n1 th{background:#eef2ff;font-weight:700;color:#3730a3}
+  .prose-n1 hr{border:none;border-top:1px solid #e2e8f0;margin:.8em 0}
+  .prose-n1 code{background:#f1f5f9;padding:.1em .35em;border-radius:.3em;font-size:.85em}
 </style>
 </head>
 <body class="bg-slate-100 min-h-screen">
@@ -151,17 +164,11 @@ function renderLesson(i){
   const st = courseState().sections[i];
   document.getElementById('breadcrumb').textContent = COURSE.title + ' › ' + sec.title;
   document.getElementById('lessonTitle').textContent = sec.title;
-  document.getElementById('lessonMeta').textContent = '⏱ ' + sec.duration + ' · ' + sec.theory.length + ' mục lý thuyết';
-  // theory
-  const th = document.getElementById('theory'); th.innerHTML='';
-  sec.theory.forEach((item,idx)=>{
-    const card = document.createElement('div');
-    card.className = 'rounded-xl border border-slate-100 bg-slate-50 p-4';
-    card.innerHTML = `<p class="font-semibold text-slate-700 mb-1">${idx+1}. ${escapeHtml(item.q)}</p>` +
-      (item.options.length ? `<ul class="text-sm text-slate-500 ml-4 list-disc">${item.options.map((o,oi)=>`<li class="${oi===item.answer?'text-emerald-600 font-medium':''}">${oi===item.answer?'✓ ':''}${escapeHtml(o)}</li>`).join('')}</ul>`:'') +
-      (item.explain ? `<p class="text-xs text-indigo-500 mt-2">💡 ${escapeHtml(item.explain)}</p>`:'');
-    th.appendChild(card);
-  });
+  document.getElementById('lessonMeta').textContent = '⏱ ' + sec.duration;
+  // theory = Markdown content (chuẩn bài học N1)
+  const th = document.getElementById('theory');
+  th.className = 'bg-white rounded-2xl border border-slate-200 p-6 shadow-sm prose-n1';
+  th.innerHTML = mdToHtml(sec.content || '');
   // nav
   const nav = document.getElementById('lessonNav'); nav.innerHTML='';
   const prev = document.createElement('button');
@@ -203,8 +210,13 @@ async function openQuiz(i){
   document.getElementById('quizTitle').textContent = 'Bài kiểm tra · ' + sec.title;
   body.innerHTML='';
   qs.forEach((qn,idx)=>{
+    const preview = (sec.quiz.isAudio && COURSE.sections[i].quizPreview) ? COURSE.sections[i].quizPreview[idx] : null;
+    const audioHtml = (preview && preview.audio)
+      ? `<audio controls class="w-full mb-2"><source src="${preview.audio}" type="audio/mpeg">Trình duyệt không hỗ trợ audio.</audio>`
+      : '';
     const wrap = document.createElement('div'); wrap.className='rounded-xl border border-slate-200 p-4';
-    wrap.innerHTML = `<p class="font-medium text-slate-800 mb-2">${idx+1}. ${escapeHtml(qn.q)}</p>` +
+    wrap.innerHTML = audioHtml +
+      `<p class="font-medium text-slate-800 mb-2">${idx+1}. ${escapeHtml(qn.q)}</p>` +
       `<div class="grid sm:grid-cols-2 gap-2">${qn.options.map((o,oi)=>`
         <label class="flex items-center gap-2 p-2.5 rounded-lg border border-slate-200 hover:border-indigo-400 cursor-pointer transition-all">
           <input type="radio" name="q${idx}" value="${oi}" onchange="quiz.answers[${idx}]=${oi}" class="accent-indigo-600">
@@ -295,6 +307,37 @@ function fireConfetti(){
   setTimeout(()=>{ box.classList.add('hidden'); box.innerHTML=''; }, 4000);
 }
 
+function mdToHtml(md){
+  if(!md) return '';
+  const lines = md.split('\n');
+  let html='', i=0;
+  const inline = s => escapeHtml(s)
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`(.+?)`/g,'<code>$1</code>');
+  while(i<lines.length){
+    let line = lines[i];
+    // table
+    if(line.trim().startsWith('|') && i+1<lines.length && lines[i+1].includes('---')){
+      const head = line.split('|').slice(1,-1).map(c=>c.trim());
+      i+=2; const rows=[];
+      while(i<lines.length && lines[i].trim().startsWith('|')){
+        rows.push(lines[i].split('|').slice(1,-1).map(c=>c.trim())); i++;
+      }
+      html += '<table><thead><tr>'+head.map(h=>`<th>${inline(h)}</th>`).join('')+'</tr></thead><tbody>'+
+        rows.map(r=>'<tr>'+r.map(c=>`<td>${inline(c)}</td>`).join('')+'</tr>').join('')+'</tbody></table>';
+      continue;
+    }
+    if(line.startsWith('### ')){ html+='<h3>'+inline(line.slice(4))+'</h3>'; i++; continue; }
+    if(line.startsWith('## ')){ html+='<h2>'+inline(line.slice(3))+'</h2>'; i++; continue; }
+    if(line.startsWith('# ')){ html+='<h1>'+inline(line.slice(2))+'</h1>'; i++; continue; }
+    if(line.trim()==='---'){ html+='<hr>'; i++; continue; }
+    if(/^- /.test(line)){ const items=[]; while(i<lines.length && /^- /.test(lines[i])){ items.push('<li>'+inline(lines[i].slice(2))+'</li>'); i++; } html+='<ul>'+items.join('')+'</ul>'; continue; }
+    if(/^\d+\. /.test(line)){ const items=[]; while(i<lines.length && /^\d+\. /.test(lines[i])){ items.push('<li>'+inline(lines[i].replace(/^\d+\. /,''))+'</li>'); i++; } html+='<ol>'+items.join('')+'</ol>'; continue; }
+    if(line.trim()===''){ i++; continue; }
+    html+='<p>'+inline(line)+'</p>'; i++;
+  }
+  return html;
+}
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 init();
